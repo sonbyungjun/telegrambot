@@ -1,23 +1,21 @@
 package me.byungjun.telegrambot;
 
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
-import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiValidationException;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -33,8 +31,15 @@ public class TelegramMessageListener {
     @Value("${telegram.bot.key}")
     private String telegramBotKey;
 
+    @Value("${downloadURL}")
+    private String downloadURL;
+
     private long userId = 0;
     private BotMode mode = BotMode.NONE;
+    private List<Content> contents;
+
+    @Autowired
+    private RestController restController;
 
     // commend
     private static final String SEARCH_TORRENT = "토렌트 검색";
@@ -111,7 +116,7 @@ public class TelegramMessageListener {
                         message.setText(getSearch(text));
                         break;
                     case CHOOSE:
-//                        selectedOne(text);
+                        message.setText(selectedOne(text));
                         break;
                     case INPUT_DELETE_DONE_NUMBER:
 //                        deleteTorrent(text);
@@ -126,31 +131,81 @@ public class TelegramMessageListener {
         return message;
     }
 
+    private String selectedOne(String text) {
+        String message = "없는 번호이거나 잘못된 입력입니다.";
+        Content content = null;
+        for (Content c : contents) {
+            if (c.getNo().equals(text)) {
+                content = c;
+                message = content.getTitle() + "\n다운로드 시작합니다.";
+                mode = BotMode.NONE;
+                break;
+            }
+        }
+
+        String URL = downloadURL + content.getLink();
+        try {
+            Document doc = Jsoup.connect(URL).get();
+            Elements elem = doc.select("#external-frame");
+            Document iframeDoc = Jsoup.connect(downloadURL + elem.attr("src")).get();
+            Elements iframeElem = iframeDoc.select(".torrent_magnet");
+            restController.magnetDown(iframeElem.select("a").text());
+            System.out.println(iframeElem.select("a").text());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return message;
+    }
+
 
     private String getSearch(String stringMessage) {
-        String URL = "https://www.tfreeca3.com/board.php?b_id=tmovie&mode=list&sc=" + stringMessage;
+        String URL = downloadURL + "board.php?b_id=tmovie&mode=list&sc=" + stringMessage;
         String mms = "";
+        contents = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(URL).get();
             Elements elem = doc.select(".b_list > tbody > tr");
 
             for (int i = 0; i < elem.size(); i++) {
-                if (elem.eq(i).select(".num").text().contains("notice")) {
+
+                String no = elem.eq(i).select(".num").text();
+                String title = elem.eq(i).select(".subject").text();
+                String dateTime = elem.eq(i).select(".datetime").text();
+                String link = elem.eq(i).select(".subject > .list_subject > a:nth-child(2)").attr("href");
+
+                Content content = new Content().builder()
+                        .no(no)
+                        .title(title)
+                        .link(link)
+                        .build();
+
+                if (no.contains("notice")) {
                     continue;
                 }
-                mms += elem.eq(i).select(".num").text() + "\n" + elem.eq(i).select(".subject").text() + "\n" + elem.eq(i).select(".datetime").text() + "\n\n";
+                mms += no + "\n" + title + "\n" + dateTime + "\n\n";
+                contents.add(content);
+                System.out.println(link);
             }
+
+            for (Content c : contents) {
+                System.out.println(c);
+            }
+            mode = BotMode.CHOOSE;
+
         } catch (IOException e) {
             e.printStackTrace();
             mms = "오류!";
+            mode = BotMode.NONE;
             return mms;
         }
 
         if (mms.isEmpty()) {
             mms = "찾는게 없다.";
+            mode = BotMode.NONE;
         }
 
-        mode = BotMode.CHOOSE;
         return mms;
     }
 
