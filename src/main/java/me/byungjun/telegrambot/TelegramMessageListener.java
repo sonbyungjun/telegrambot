@@ -1,6 +1,5 @@
 package me.byungjun.telegrambot;
 
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -39,7 +38,7 @@ public class TelegramMessageListener {
     private List<Content> contents;
 
     @Autowired
-    private RestController restController;
+    private RestService restService;
 
     // commend
     private static final String SEARCH_TORRENT = "토렌트 검색";
@@ -60,7 +59,6 @@ public class TelegramMessageListener {
 
                 @Override
                 public void onUpdateReceived(Update update) {
-                    System.out.println("호출됨");
                     if (update.hasMessage() && update.getMessage().hasText()) {
                         int id = update.getMessage().getFrom().getId();
                         if (userId == 0) {
@@ -81,6 +79,13 @@ public class TelegramMessageListener {
                         } catch (TelegramApiException e) {
                             e.printStackTrace();
                         }
+
+                        try {
+                            clearWebhook();
+                        } catch (TelegramApiRequestException e) {
+                            e.printStackTrace();
+                        }
+
                     }
                 }
 
@@ -149,8 +154,7 @@ public class TelegramMessageListener {
             Elements elem = doc.select("#external-frame");
             Document iframeDoc = Jsoup.connect(downloadURL + elem.attr("src")).get();
             Elements iframeElem = iframeDoc.select(".torrent_magnet");
-            restController.magnetDown(iframeElem.select("a").text());
-            System.out.println(iframeElem.select("a").text());
+            restService.create(iframeElem.select("a").text());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -186,12 +190,8 @@ public class TelegramMessageListener {
                 }
                 mms += no + "\n" + title + "\n" + dateTime + "\n\n";
                 contents.add(content);
-                System.out.println(link);
             }
 
-            for (Content c : contents) {
-                System.out.println(c);
-            }
             mode = BotMode.CHOOSE;
 
         } catch (IOException e) {
