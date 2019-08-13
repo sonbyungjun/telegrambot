@@ -108,7 +108,7 @@ public class TelegramMessageListener {
                 mode = BotMode.INPUT_KEYWORD;
                 break;
             case DELETE_DONE_TORRENT:
-                message.setText("번호를 입력하세요.");
+                message.setText("고유번호를 입력하세요.");
                 mode = BotMode.INPUT_DELETE_DONE_NUMBER;
                 break;
             case SHOW_STATUS:
@@ -124,7 +124,9 @@ public class TelegramMessageListener {
                         message.setText(selectedOne(text));
                         break;
                     case INPUT_DELETE_DONE_NUMBER:
-//                        deleteTorrent(text);
+                        String[] texts = {text};
+                        message.setText(restService.delete(texts));
+                        mode = BotMode.NONE;
                         break;
                     default:
                         message = sendMayIHelpYou(chatId);
@@ -188,7 +190,7 @@ public class TelegramMessageListener {
                 if (no.contains("notice")) {
                     continue;
                 }
-                mms += no + "\n" + title + "\n" + dateTime + "\n\n";
+                mms += no + ". " + title + "\n" + dateTime + "\n\n";
                 contents.add(content);
             }
 
