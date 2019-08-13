@@ -112,7 +112,7 @@ public class TelegramMessageListener {
                 mode = BotMode.INPUT_DELETE_DONE_NUMBER;
                 break;
             case SHOW_STATUS:
-//                showStatus();
+                message.setText(restService.list());
                 mode = BotMode.NONE;
                 break;
             default:
