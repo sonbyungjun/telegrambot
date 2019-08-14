@@ -1,4 +1,4 @@
-package me.byungjun.telegrambot;
+package me.byungjun.telegrambot.domain;
 
 import lombok.*;
 

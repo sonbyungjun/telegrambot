@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
-public class TelegrambotApplication {
+public class TelegramBotApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(TelegrambotApplication.class, args);
+        SpringApplication.run(TelegramBotApplication.class, args);
     }
 
     @Bean
