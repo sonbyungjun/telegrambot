@@ -20,7 +20,7 @@ public class CrawlingHandler {
     String downloadURL;
 
     @Autowired
-    NasTorrentHandler nasTorrentHandler;
+    MessageHandler messageHandler;
 
     public static List<Content> contents;
 
@@ -31,16 +31,17 @@ public class CrawlingHandler {
             Elements elem = doc.select("#external-frame");
             Document iframeDoc = Jsoup.connect(downloadURL + elem.attr("src")).get();
             Elements iframeElem = iframeDoc.select(".torrent_magnet");
-            nasTorrentHandler.create(iframeElem.select("a").text());
+            messageHandler.create(iframeElem.select("a").text());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public String getSearch(String stringMessage) {
+    public List<String> getSearch(String stringMessage, String category) {
         String mms = "";
-        String URL = downloadURL + "board.php?b_id=tmovie&mode=list&sc=" + stringMessage;
+        String URL = downloadURL + "board.php?b_id=" + category + "&mode=list&sc=" + stringMessage;
+        List<String> list = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(URL).get();
             Elements elem = doc.select(".b_list > tbody > tr");
@@ -62,7 +63,8 @@ public class CrawlingHandler {
                     continue;
                 }
                 contents.add(content);
-                mms += no + ". " + title + "\n업로드날짜: " + dateTime + "\n\n";
+                mms = no + ". " + title + "\n업로드날짜: " + dateTime + "\n\n";
+                list.add(mms);
             }
 
             CommandHandler.mode = BotMode.CHOOSE;
@@ -70,15 +72,19 @@ public class CrawlingHandler {
         } catch (IOException e) {
             e.printStackTrace();
             mms = "오류!";
+            list.add(mms);
             CommandHandler.mode = BotMode.NONE;
-            return mms;
+            return list;
         }
 
         if (mms.isEmpty()) {
             mms = "찾는게 없다.";
+            list.add(mms);
             CommandHandler.mode = BotMode.NONE;
+            return list;
         }
-        mms += "다운로드 받으실 번호를 입력해주세요.";
-        return mms;
+        mms = "다운로드 받으실 번호를 입력해주세요.";
+        list.add(mms);
+        return list;
     }
 }
