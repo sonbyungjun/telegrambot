@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+
 @Service
 public class MessageHandler {
 
@@ -69,7 +71,7 @@ public class MessageHandler {
         String message = "없는 번호이거나 잘못된 입력입니다.";
         Content content = null;
         for (Content c : CrawlingHandler.contents) {
-            if (c.getNo().equals(text)) {
+            if (c.getNo().equals(text.substring(0, text.indexOf(".")))) {
                 content = c;
                 message = content.getTitle() + "\n다운로드 시작합니다.";
                 CommandHandler.mode = BotMode.NONE;

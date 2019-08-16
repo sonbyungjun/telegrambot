@@ -78,12 +78,11 @@ public class CrawlingHandler {
         }
 
         if (mms.isEmpty()) {
-            mms = "찾는게 없다.";
+            mms = "찾는게 없습니다.";
             list.add(mms);
             CommandHandler.mode = BotMode.NONE;
             return list;
         }
-        mms = "다운로드 받으실 번호를 입력해주세요.";
         list.add(mms);
         return list;
     }

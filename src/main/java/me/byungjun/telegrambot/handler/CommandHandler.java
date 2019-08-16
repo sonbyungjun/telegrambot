@@ -47,11 +47,11 @@ public class CommandHandler {
                 mode = BotMode.INPUT_KEYWORD;
                 break;
             case HOME_BACK:
-                message = createMessageButton(chatId, "선택하세요.", SEARCH_TORRENT, SHOW_STATUS);
+                message = goHome(chatId, "선택하세요.");
                 mode = BotMode.NONE;
                 break;
             case SHOW_STATUS:
-                message.setText(messageHandler.list());
+                message = goHome(chatId, messageHandler.list()).enableMarkdown(false);
                 mode = BotMode.NONE;
                 break;
             default:
@@ -60,18 +60,24 @@ public class CommandHandler {
                         message = categorySearch(chatId, text);
                         break;
                     case CHOOSE:
-                        message.setText(messageHandler.selectedOne(text));
+                        message = goHome(chatId, messageHandler.selectedOne(text));
                         break;
                     case INPUT_DELETE_DONE_NUMBER:
                         message.setText("지원하지 않는 기능입니다.");
                         mode = BotMode.NONE;
                         break;
                     default:
-                        message = createMessageButton(chatId, "선택하세요.", SEARCH_TORRENT, SHOW_STATUS);
+                        message = goHome(chatId, "선택하세요.");
                         break;
                 }
                 break;
         }
+        return message;
+    }
+
+    private SendMessage goHome(long chatId, String msg) {
+        SendMessage message;
+        message = createMessageButton(chatId, msg, SEARCH_TORRENT, SHOW_STATUS);
         return message;
     }
 
@@ -96,7 +102,12 @@ public class CommandHandler {
                 category = "tmusic";
                 break;
             default:
-                SendMessage message = createMessageButton(chatId, "다운로드 받으실 번호를 선택하세요.", crawlingHandler.getSearch(text, category).toArray(new String[0]));
+                String[] msg = crawlingHandler.getSearch(text, category).toArray(new String[0]);
+                String inlineMsg = "";
+                for (String s : msg) {
+                    inlineMsg += s;
+                }
+                SendMessage message = createMessageButton(chatId, inlineMsg, msg);
                 return message;
         }
         return new SendMessage().setChatId(chatId).setText("선택하셨습니다. 검색할 키워드를 입력해주세요.");
@@ -113,12 +124,14 @@ public class CommandHandler {
         row.add(HOME_BACK);
         keyboardRow.add(row);
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup()
-                .setKeyboard(keyboardRow);
+                .setKeyboard(keyboardRow)
+                .setResizeKeyboard(true)
+                .setOneTimeKeyboard(true);
         SendMessage sendMessage = new SendMessage().setChatId(chatId)
                 .enableMarkdown(true)
                 .enableWebPagePreview()
                 .setReplyToMessageId(0)
-                .setReplyMarkup(replyKeyboardMarkup.setOneTimeKeyboard(true))
+                .setReplyMarkup(replyKeyboardMarkup)
                 .setText(message);
 
         return sendMessage;

@@ -1,6 +1,7 @@
 package me.byungjun.telegrambot.listener;
 
 import me.byungjun.telegrambot.handler.CommandHandler;
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -55,20 +56,19 @@ public class TelegramMessageListener {
                         String stringMessage = update.getMessage().getText();
                         System.out.println(stringMessage + ", " + userId);
 
-                        SendMessage message = commandHandler.resolveCommand(chatId, stringMessage);
+                        SendMessage message;
+                        try {
+                            message = commandHandler.resolveCommand(chatId, stringMessage);
+                        } catch (JSONException e) {
+                            message = new SendMessage(chatId, "NAS의 아이디나 비번을 확인해주세요.");
+                            e.printStackTrace();
+                        }
 
                         try {
                             execute(message); // Call method to send the message
                         } catch (TelegramApiException e) {
                             e.printStackTrace();
                         }
-
-                        try {
-                            clearWebhook();
-                        } catch (TelegramApiRequestException e) {
-                            e.printStackTrace();
-                        }
-
                     }
                 }
 
