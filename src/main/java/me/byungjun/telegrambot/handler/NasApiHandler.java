@@ -60,29 +60,5 @@ public class NasApiHandler {
                 .build();
         return restTemplate.exchange(requestEntity, String.class);
     }
-
-    public String delete(String[] ids) {
-        String id = "";
-        for (int i = 0; i < ids.length; i++) {
-            id += ids[i];
-            if (!(i == ids.length - 1)) {
-                id += ",";
-            }
-        }
-        System.out.println(id);
-        URI uri = null;
-        try {
-            uri = new URI(downUrl + "webapi/DownloadStation/task.cgi?" +
-                    "api=SYNO.DownloadStation.Task&version=1&method=delete&id=" + id +
-                    "&force_complete=true");
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-        RequestEntity<Void> requestEntity = RequestEntity.get(uri)
-                .header("Cookie", "id=" + loginNas())
-                .build();
-        ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
-        System.out.println(response.toString());
-        return "삭제했습니다.";
-    }
+    
 }
