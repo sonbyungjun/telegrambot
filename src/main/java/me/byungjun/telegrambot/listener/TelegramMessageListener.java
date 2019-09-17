@@ -1,5 +1,7 @@
 package me.byungjun.telegrambot.listener;
 
+import me.byungjun.telegrambot.domain.BotMode;
+import me.byungjun.telegrambot.domain.User;
 import me.byungjun.telegrambot.handler.CommandHandler;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class TelegramMessageListener {
@@ -27,7 +31,10 @@ public class TelegramMessageListener {
     @Value("${telegram.bot.key}")
     private String telegramBotKey;
 
-    private long userId = 0;
+    private static Map<Integer, User> users = new HashMap<>();
+
+    @Value("${password}")
+    private String password;
 
     @PostConstruct
     private void init() {
@@ -44,24 +51,32 @@ public class TelegramMessageListener {
                 @Override
                 public void onUpdateReceived(Update update) {
                     if (update.hasMessage() && update.getMessage().hasText()) {
+
                         int id = update.getMessage().getFrom().getId();
-                        if (userId == 0) {
-                            userId = id;
-                        }
-                        if (userId != id) {
-                            System.out.println("유저가 틀려");
-                            return;
-                        }
+
                         long chatId = update.getMessage().getChatId();
                         String stringMessage = update.getMessage().getText();
-                        System.out.println(stringMessage + ", " + userId);
+                        System.out.println(stringMessage + ", " + id);
 
                         SendMessage message;
-                        try {
-                            message = commandHandler.resolveCommand(chatId, stringMessage);
-                        } catch (JSONException e) {
-                            message = new SendMessage(chatId, "NAS의 아이디나 비번을 확인해주세요.");
-                            e.printStackTrace();
+
+                        if (users.get(id) == null) {
+                            users.put(id, User.builder().id(id).mode(BotMode.NONE).build());
+                            message = new SendMessage(chatId, "비밀번호를 입력해주세요.");
+                        } else if (!users.get(id).isActive()) {
+                            if (stringMessage.equals(password)) {
+                                users.get(id).setActive(true);
+                                message = new SendMessage(chatId, "사용자가 추가 되었습니다. 아무 버튼이나 눌러주세요.");
+                            } else {
+                                message = new SendMessage(chatId, "비밀번호가 틀렸습니다 다시 입력해주세요.");
+                            }
+                        } else {
+                            try {
+                                message = commandHandler.resolveCommand(chatId, stringMessage, users.get(id));
+                            } catch (JSONException e) {
+                                message = new SendMessage(chatId, "NAS의 아이디나 비번을 확인해주세요.");
+                                e.printStackTrace();
+                            }
                         }
 
                         try {

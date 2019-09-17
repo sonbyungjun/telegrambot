@@ -2,6 +2,7 @@ package me.byungjun.telegrambot.handler;
 
 import me.byungjun.telegrambot.domain.BotMode;
 import me.byungjun.telegrambot.domain.Content;
+import me.byungjun.telegrambot.domain.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,14 +66,14 @@ public class MessageHandler {
         return message;
     }
 
-    public String selectedOne(String text) {
+    public String selectedOne(String text, User user) {
         String message = "없는 번호이거나 잘못된 입력입니다.";
         Content content = null;
-        for (Content c : CrawlingHandler.contents) {
+        for (Content c : user.getContents()) {
             if (c.getNo().equals(text.substring(0, text.indexOf(".")))) {
                 content = c;
                 message = content.getTitle() + "\n다운로드 시작합니다.";
-                CommandHandler.mode = BotMode.NONE;
+                user.setMode(BotMode.NONE);
                 break;
             }
         }

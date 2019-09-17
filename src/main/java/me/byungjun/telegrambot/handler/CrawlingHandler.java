@@ -2,6 +2,7 @@ package me.byungjun.telegrambot.handler;
 
 import me.byungjun.telegrambot.domain.BotMode;
 import me.byungjun.telegrambot.domain.Content;
+import me.byungjun.telegrambot.domain.User;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -22,8 +23,6 @@ public class CrawlingHandler {
     @Autowired
     MessageHandler messageHandler;
 
-    public static List<Content> contents;
-
     public void getMagnet(Content content) {
         String URL = downloadURL + content.getLink();
         try {
@@ -38,50 +37,55 @@ public class CrawlingHandler {
         }
     }
 
-    public List<String> getSearch(String stringMessage, String category) {
+    public List<String> getSearch(String stringMessage, String category, User user) {
         String mms = "";
-        String URL = downloadURL + "board.php?b_id=" + category + "&mode=list&sc=" + stringMessage;
-        return lists(mms, URL);
+        String URL = downloadURL + "bbs/s.php?k=" + stringMessage;
+        return lists(mms, URL, user);
     }
 
-    private List<String> lists(String mms, String URL) {
+    private List<String> lists(String mms, String URL, User user) {
         List<String> list = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(URL).get();
-            mms = parseListing(mms, list, doc);
+            mms = parseListing(mms, list, doc, user);
 
-            CommandHandler.mode = BotMode.CHOOSE;
+            user.setMode(BotMode.CHOOSE);
 
         } catch (IOException e) {
             e.printStackTrace();
             mms = "오류!";
             list.add(mms);
-            CommandHandler.mode = BotMode.NONE;
+            user.setMode(BotMode.NONE);
             return list;
         }
 
         if (mms.isEmpty()) {
             mms = "찾는게 없습니다.";
             list.add(mms);
-            CommandHandler.mode = BotMode.NONE;
+            user.setMode(BotMode.NONE);
             return list;
         }
+
         return list;
     }
 
-    private String parseListing(String mms, List<String> list, Document doc) {
-        Elements elem = doc.select(".b_list > tbody > tr");
-        contents = new ArrayList<Content>();
+    private String parseListing(String mms, List<String> list, Document doc, User user) {
+        Elements elem = doc.select(".board_list > tbody > tr");
+
+        List<Content> contents = new ArrayList<Content>();
+
         int size = elem.size();
         if (size > 22) {
             size = 22;
         }
-        System.out.println(size);
+
         for (int i = 0; i < size; i++) {
-            String no = elem.eq(i).select(".num").text();
+            String no = String.valueOf(i + 1);
             String title = elem.eq(i).select(".subject").text();
             String dateTime = elem.eq(i).select(".datetime").text();
-            String link = elem.eq(i).select(".subject > .list_subject > a:nth-child(2)").attr("href");
+            String link = elem.eq(i).select(".subject > a[target]").attr("href").substring(3);
+            String fileSize = elem.eq(i).select(".hit").text();
+            System.out.println(link);
 
             Content content = new Content().builder()
                     .no(no)
@@ -93,20 +97,21 @@ public class CrawlingHandler {
                 continue;
             }
             contents.add(content);
-            mms = no + ". " + title + "\n업로드날짜: " + dateTime + "\n\n";
+            mms = no + ". " + title + "\n업로드날짜: " + dateTime + "\n파일용량: " + fileSize + "\n\n";
             list.add(mms);
         }
+        user.setContents(contents);
         return mms;
     }
 
-    public List<String> dailyBest(String category) {
+    public List<String> dailyBest(String category, User user) {
         String mms = "";
         String URL = downloadURL + "board.php?mode=list&b_id=" + category;
         List<String> list = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(URL).get();
             Elements elem = doc.select(".top_list > a");
-            contents = new ArrayList<Content>();
+            List<Content> contents = new ArrayList<Content>();
 
             for (int i = 0; i < 5; i++) {
                 String no = String.valueOf(i + 1);
@@ -126,26 +131,27 @@ public class CrawlingHandler {
                 mms = no + ". " + title + "\n\n";
                 list.add(mms);
             }
-            CommandHandler.mode = BotMode.CHOOSE;
+            user.setContents(contents);
+            user.setMode(BotMode.CHOOSE);
         } catch (IOException e) {
             e.printStackTrace();
             mms = "오류!";
             list.add(mms);
-            CommandHandler.mode = BotMode.NONE;
+            user.setMode(BotMode.NONE);
             return list;
         }
         if (mms.isEmpty()) {
             mms = "찾는게 없습니다.";
             list.add(mms);
-            CommandHandler.mode = BotMode.NONE;
+            user.setMode(BotMode.NONE);
             return list;
         }
         return list;
     }
 
-    public List<String> weekMonthBest(String category, String bestCategory) {
+    public List<String> weekMonthBest(String category, String bestCategory, User user) {
         String mms = "";
         String URL = downloadURL + "top100.php?b_id=" + category + "&hit=" + bestCategory;
-        return lists(mms, URL);
+        return lists(mms, URL, user);
     }
 }
