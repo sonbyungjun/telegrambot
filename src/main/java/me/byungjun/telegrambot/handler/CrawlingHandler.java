@@ -5,6 +5,7 @@ import me.byungjun.telegrambot.domain.Content;
 import me.byungjun.telegrambot.domain.User;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,17 +28,15 @@ public class CrawlingHandler {
         String URL = downloadURL + content.getLink();
         try {
             Document doc = Jsoup.connect(URL).get();
-            Elements elem = doc.select("#external-frame");
-            Document iframeDoc = Jsoup.connect(downloadURL + elem.attr("src")).get();
-            Elements iframeElem = iframeDoc.select(".torrent_magnet");
-            messageHandler.create(iframeElem.select("a").text());
+            Elements elem = doc.select("#main_body > table > tbody > tr > td > a");
+            messageHandler.create(elem.text());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public List<String> getSearch(String stringMessage, String category, User user) {
+    public List<String> getSearch(String stringMessage, User user) {
         String mms = "";
         String URL = downloadURL + "bbs/s.php?k=" + stringMessage;
         return lists(mms, URL, user);
@@ -85,7 +84,6 @@ public class CrawlingHandler {
             String dateTime = elem.eq(i).select(".datetime").text();
             String link = elem.eq(i).select(".subject > a[target]").attr("href").substring(3);
             String fileSize = elem.eq(i).select(".hit").text();
-            System.out.println(link);
 
             Content content = new Content().builder()
                     .no(no)
@@ -104,19 +102,35 @@ public class CrawlingHandler {
         return mms;
     }
 
-    public List<String> dailyBest(String category, User user) {
+    public List<String> best(String type, User user) {
         String mms = "";
-        String URL = downloadURL + "board.php?mode=list&b_id=" + category;
+        String URL = downloadURL + "bbs/popular.html";
         List<String> list = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(URL).get();
-            Elements elem = doc.select(".top_list > a");
+            Elements fields = doc.select("#fieldset_list > fieldset");
+
+            Element elem = null;
+            for (Element e : fields) {
+                if (e.select("legend > a").text().equals(type)) {
+                    elem = e;
+                    break;
+                }
+            }
+            if (elem == null) {
+                mms = "찾는게 없습니다.";
+                list.add(mms);
+                user.setMode(BotMode.NONE);
+                return list;
+            }
             List<Content> contents = new ArrayList<Content>();
 
-            for (int i = 0; i < 5; i++) {
+            Elements aTags = elem.select("tbody > tr > td > a");
+
+            for (int i = 0; i < aTags.size(); i++) {
                 String no = String.valueOf(i + 1);
-                String title = elem.eq(i).text();
-                String link = elem.eq(i).attr("href");
+                String title = aTags.eq(i).text();
+                String link = aTags.eq(i).attr("href").substring(3);
 
                 Content content = new Content().builder()
                         .no(no)
@@ -124,15 +138,13 @@ public class CrawlingHandler {
                         .link(link)
                         .build();
 
-                if (no.contains("notice")) {
-                    continue;
-                }
                 contents.add(content);
                 mms = no + ". " + title + "\n\n";
                 list.add(mms);
             }
             user.setContents(contents);
             user.setMode(BotMode.CHOOSE);
+
         } catch (IOException e) {
             e.printStackTrace();
             mms = "오류!";
@@ -149,9 +161,4 @@ public class CrawlingHandler {
         return list;
     }
 
-    public List<String> weekMonthBest(String category, String bestCategory, User user) {
-        String mms = "";
-        String URL = downloadURL + "top100.php?b_id=" + category + "&hit=" + bestCategory;
-        return lists(mms, URL, user);
-    }
 }

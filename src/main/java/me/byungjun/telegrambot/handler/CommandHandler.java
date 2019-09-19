@@ -20,8 +20,6 @@ public class CommandHandler {
     @Autowired
     private CrawlingHandler crawlingHandler;
 
-    private static String category = "tmovie";
-    private static String bestCategory = "Week";
 
     // commend
     static final String SEARCH_TORRENT = "토렌트 키워드 검색";
@@ -30,29 +28,23 @@ public class CommandHandler {
     static final String HOME_BACK = "처음으로";
 
     static final String MOVIE = "영화";
-    static final String DRAMA = "드라마";
-    static final String ENT = "예능";
-    static final String TV = "TV";
+    static final String DRAMA = "TV드라마";
+    static final String ENT = "TV예능";
+    static final String TV = "도서/만화";
     static final String ANI = "애니메이션";
-    static final String MUSIC = "음악";
-
-    static final String DAILY = "일간 베스트";
-    static final String WEEKLY = "주간 베스트";
-    static final String MONTHLY = "월간 베스트";
+    static final String MUSIC = "해외음원";
 
     public SendMessage resolveCommand(long chatId, String text, User user) {
         SendMessage message = new SendMessage().setChatId(chatId);
         BotMode mode = user.getMode();
         switch (text) {
             case SEARCH_TORRENT:
-//                message = createMessageButton(chatId, "다운받으실 장르를 선택하세요.",
-//                        MOVIE, DRAMA, ENT, TV, ANI, MUSIC);
                 message = new SendMessage().setChatId(chatId).setText("선택하셨습니다. 검색할 키워드를 입력해주세요.");
                 user.setMode(BotMode.INPUT_KEYWORD);
                 break;
             case TORRENT_BEST:
                 message = createMessageButton(chatId, "장르를 선택하세요.",
-                        MOVIE, DRAMA, ENT, ANI);
+                        MOVIE, DRAMA, ENT, ANI, TV, MUSIC);
                 user.setMode(BotMode.CHOOSE_BEST);
                 break;
             case HOME_BACK:
@@ -66,8 +58,7 @@ public class CommandHandler {
             default:
                 switch (mode) {
                     case INPUT_KEYWORD:
-//                        message = categorySearch(chatId, text, user);
-                        String[] msg = crawlingHandler.getSearch(text, category, user).toArray(new String[0]);
+                        String[] msg = crawlingHandler.getSearch(text, user).toArray(new String[0]);
                         String inlineMsg = parseList(msg);
                         message = createMessageButton(chatId, inlineMsg, msg);
                         break;
@@ -75,45 +66,17 @@ public class CommandHandler {
                         message = goHome(chatId, messageHandler.selectedOne(text, user));
                         break;
                     case CHOOSE_BEST:
-                        message = categoryBest(chatId, text);
+                        message = categoryBest(chatId, text, message, user);
                         user.setMode(BotMode.INPUT_BEST_TORRENT);
                         break;
                     case INPUT_BEST_TORRENT:
-                        message = categoryBestChoice(chatId, text, message, user);
+                        message = goHome(chatId, messageHandler.selectedOne(text, user));
                         user.setMode(BotMode.CHOOSE);
                         break;
                     default:
                         message = goHome(chatId, "선택하세요.");
                         break;
                 }
-                break;
-        }
-        return message;
-    }
-
-    private SendMessage categoryBestChoice(long chatId, String text, SendMessage message, User user) {
-        String[] msg;
-        String inlineMsg;
-        switch (text) {
-            case DAILY:
-                msg = crawlingHandler.dailyBest(category, user).toArray(new String[0]);
-                inlineMsg = parseList(msg);
-                message = createMessageButton(chatId, inlineMsg, msg);
-                break;
-            case WEEKLY:
-                bestCategory = "Week";
-                msg = crawlingHandler.weekMonthBest(category, bestCategory, user).toArray(new String[0]);
-                inlineMsg = parseList(msg);
-                message = createMessageButton(chatId, inlineMsg, msg).enableMarkdown(false);
-                break;
-            case MONTHLY:
-                bestCategory = "Month";
-                msg = crawlingHandler.weekMonthBest(category, bestCategory, user).toArray(new String[0]);
-                inlineMsg = parseList(msg);
-                message = createMessageButton(chatId, inlineMsg, msg).enableMarkdown(false);
-                break;
-            default:
-                message = goHome(chatId, "잘못 선택하셨습니다.");
                 break;
         }
         return message;
@@ -127,59 +90,42 @@ public class CommandHandler {
         return inlineMsg;
     }
 
-    private SendMessage goHome(long chatId, String msg) {
+    public SendMessage goHome(long chatId, String msg) {
         SendMessage message;
         message = createMessageButton(chatId, msg, SEARCH_TORRENT, TORRENT_BEST, SHOW_STATUS);
         return message;
     }
 
-    private SendMessage categorySearch(long chatId, String text, User user) {
+
+
+    private SendMessage categoryBest(long chatId, String text, SendMessage message, User user) {
+        String[] msg;
+        String inlineMsg;
         switch (text) {
             case MOVIE:
-                category = "tmovie";
+                msg = crawlingHandler.best(MOVIE, user).toArray(new String[0]);
                 break;
             case DRAMA:
-                category = "tdrama";
+                msg = crawlingHandler.best(DRAMA, user).toArray(new String[0]);
                 break;
             case ENT:
-                category = "tent";
+                msg = crawlingHandler.best(ENT, user).toArray(new String[0]);
+                break;
+            case ANI:
+                msg = crawlingHandler.best(ANI, user).toArray(new String[0]);
                 break;
             case TV:
-                category = "tv";
-                break;
-            case ANI:
-                category = "tani";
+                msg = crawlingHandler.best(TV, user).toArray(new String[0]);
                 break;
             case MUSIC:
-                category = "tmusic";
-                break;
-            default:
-                String[] msg = crawlingHandler.getSearch(text, category, user).toArray(new String[0]);
-                String inlineMsg = parseList(msg);
-                SendMessage message = createMessageButton(chatId, inlineMsg, msg);
-                return message;
-        }
-        return new SendMessage().setChatId(chatId).setText("선택하셨습니다. 검색할 키워드를 입력해주세요.");
-    }
-
-    private SendMessage categoryBest(long chatId, String text) {
-        switch (text) {
-            case MOVIE:
-                category = "tmovie";
-                break;
-            case DRAMA:
-                category = "tdrama";
-                break;
-            case ENT:
-                category = "tent";
-                break;
-            case ANI:
-                category = "tani";
+                msg = crawlingHandler.best(MUSIC, user).toArray(new String[0]);
                 break;
             default:
                 return goHome(chatId, "잘못 입력하셨습니다.");
         }
-        return createMessageButton(chatId, "선택 해주세요.", DAILY, WEEKLY, MONTHLY);
+        inlineMsg = parseList(msg);
+        message = createMessageButton(chatId, inlineMsg, msg).enableMarkdown(false);
+        return message;
     }
 
     private SendMessage createMessageButton(long chatId, String message, String... messages) {

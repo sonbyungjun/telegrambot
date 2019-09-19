@@ -66,9 +66,9 @@ public class TelegramMessageListener {
                         } else if (!users.get(id).isActive()) {
                             if (stringMessage.equals(password)) {
                                 users.get(id).setActive(true);
-                                message = new SendMessage(chatId, "사용자가 추가 되었습니다. 아무 버튼이나 눌러주세요.");
+                                message = commandHandler.goHome(chatId, "사용자가 추가 되었습니다. 선택하세요.");
                             } else {
-                                message = new SendMessage(chatId, "비밀번호가 틀렸습니다 다시 입력해주세요.");
+                                message = new SendMessage(chatId, "비밀번호가 틀렸습니다.\n 다시 입력해주세요.");
                             }
                         } else {
                             try {
