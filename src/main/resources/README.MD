@@ -5,7 +5,7 @@
 telegram.bot.name=텔레그램 봇 생성 아이디<br>
 telegram.bot.key=텔레그램 봇 토큰<br>
 <br>
-downloadURL=https://www.tfreeca3.com/<br>
+downloadURL=https://torrentwal.com/<br>
 <br>
 nas.down.url=http://나스주소:나스포트번호/<br>
 nas.username=나스아이디<br>

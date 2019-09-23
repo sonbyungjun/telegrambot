@@ -81,8 +81,14 @@ public class CrawlingHandler {
         for (int i = 0; i < size; i++) {
             String no = String.valueOf(i + 1);
             String title = elem.eq(i).select(".subject").text();
+            if (title.contains("마그넷")) {
+                continue;
+            }
             String dateTime = elem.eq(i).select(".datetime").text();
-            String link = elem.eq(i).select(".subject > a[target]").attr("href").substring(3);
+            String link = elem.eq(i).select(".subject > a[target]").attr("href");
+            if (link.length() > 3) {
+                link = elem.eq(i).select(".subject > a[target]").attr("href").substring(3);
+            }
             String fileSize = elem.eq(i).select(".hit").text();
 
             Content content = new Content().builder()

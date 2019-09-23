@@ -20,7 +20,6 @@ public class CommandHandler {
     @Autowired
     private CrawlingHandler crawlingHandler;
 
-
     // commend
     static final String SEARCH_TORRENT = "토렌트 키워드 검색";
     static final String TORRENT_BEST = "장르별 베스트 보기";
